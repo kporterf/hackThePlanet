@@ -1,11 +1,97 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
-    android:layout_height="match_parent" android:paddingLeft="@dimen/activity_horizontal_margin"
-    android:paddingRight="@dimen/activity_horizontal_margin"
-    android:paddingTop="@dimen/activity_vertical_margin"
-    android:paddingBottom="@dimen/activity_vertical_margin" tools:context=".MainActivity">
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">]
 
-    <TextView android:text="@string/hello_world" android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#282828"
+        android:gravity="center"
+        android:padding="16dp"
+        android:id="@+id/playlist_info">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            tools:text="HAPPY MOOD"
+            android:text="--"
+            android:textSize="12sp"
+            android:layout_centerHorizontal="true"
+            android:id="@+id/mood_label"
+            android:layout_marginBottom="2dp"
+            android:textColor="@android:color/white"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            tools:text="Fun In The Sun"
+            android:text="--"
+            android:id="@+id/playlist_label"
+            android:layout_centerHorizontal="true"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="2dp"
+            android:layout_below="@id/mood_label"
+            android:textColor="@android:color/white"
+            />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            tools:text="Juan Alvarado"
+            android:text="--"
+            android:layout_centerHorizontal="true"
+            android:id="@+id/owner_label"
+            android:layout_below="@id/playlist_label"
+            android:textColor="@android:color/white"/>
+
+    </RelativeLayout>
+
+
+
+    <LinearLayout
+        android:layout_alignParentBottom="true"
+        android:id="@+id/form_action_buttons"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#2CB958">
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/play_button"
+            android:textStyle="bold"
+            android:background="#2CB958"
+            android:layout_weight="1"
+            android:textColor="@android:color/white"
+            android:clickable="true"
+            android:text="Play"/>
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:background="@android:color/white"
+            />
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/pause_button"
+            android:background="#2CB958"
+            android:layout_weight="1"
+            android:textAlignment="center"
+            android:text="Pause"
+            android:textColor="@android:color/white"/>
+    </LinearLayout>
+
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        tools:layout_height="360dp"
+        android:id="@+id/playlist_art"
+        android:background="#181818"
+        android:scaleType="centerCrop"
+        android:layout_below="@id/playlist_info"
+        android:layout_above="@id/form_action_buttons"/>
 
 </RelativeLayout>
