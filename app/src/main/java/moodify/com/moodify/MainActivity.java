@@ -1,7 +1,12 @@
 package moodify.com.moodify;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -11,6 +16,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.spotify.sdk.android.authentication.AuthenticationClient;
@@ -38,7 +44,8 @@ import retrofit.Callback;
 import retrofit.RetrofitError;
 import retrofit.client.Response;
 
-public class MainActivity extends AppCompatActivity implements PlayerNotificationCallback, ConnectionStateCallback{
+public class MainActivity extends AppCompatActivity implements
+        PlayerNotificationCallback, ConnectionStateCallback, SensorEventListener{
 
     // TODO: Replace with your client ID
     private static final String CLIENT_ID = "6106c54c402f4d878df000badf3384bf";
@@ -58,15 +65,28 @@ public class MainActivity extends AppCompatActivity implements PlayerNotificatio
     public TextView moodLabel;
     public TextView playlistLable;
     public TextView ownerLable;
+    public Button setTheMoodButton;
 
     private SharedPreferences sharedPreferences;
     private SpotifyApi spotifyApi;
+
+    public boolean hasPlayed = false;
+
+    private SensorManager mSensorManager;
+    private Sensor mLight, mTemp;
+    public String mood;
+
+    public Float currentLightLevel = 10000.00f;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         sharedPreferences = getSharedPreferences("com.moodify.PREFERENCE_FILES", MODE_PRIVATE);
+
+        mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        mLight = mSensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);
 
 
         playButton = (Button) findViewById(R.id.play_button);
@@ -75,8 +95,14 @@ public class MainActivity extends AppCompatActivity implements PlayerNotificatio
         moodLabel = (TextView) findViewById(R.id.mood_label);
         playlistLable = (TextView) findViewById(R.id.playlist_label);
         ownerLable = (TextView) findViewById(R.id.owner_label);
+        setTheMoodButton = (Button) findViewById(R.id.set_the_mood_button);
 
         spotifyApi = new SpotifyApi();
+
+
+        String token = sharedPreferences.getString("token", "default");
+        Log.v("BRO", String.valueOf(sharedPreferences.contains("token")));
+        Log.v("BRO", token);
 
         if(sharedPreferences.getString("token", null) == null || sharedPreferences.getString("token", "").isEmpty()) {
             AuthenticationRequest.Builder builder = new AuthenticationRequest.Builder(CLIENT_ID,
@@ -90,15 +116,42 @@ public class MainActivity extends AppCompatActivity implements PlayerNotificatio
         playButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                try {
-                    playNow();
-                } catch (Exception e) {
-                    e.printStackTrace();
+                if(!hasPlayed) {
+                    try {
+                        playNow("tbt");
+                        hasPlayed = true;
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+                else {
+                    playOrPause("play");
                 }
             }
         });
 
+        setTheMoodButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mSensorManager.registerListener(MainActivity.this, mLight, SensorManager.SENSOR_DELAY_NORMAL);
+            }
+        });
 
+
+
+        pauseButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                playOrPause("pause");
+            }
+        });
+
+
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
     }
 
     @Override
@@ -138,11 +191,46 @@ public class MainActivity extends AppCompatActivity implements PlayerNotificatio
         }
     }
 
-    public void playNow() throws Exception {
+    public void playOrPause(String command) {
         OkHttpClient client = new OkHttpClient();
 
         Request request = new Request.Builder()
-                .url("http://192.168.3.163:3000/mood/chill")
+                .url("http://192.168.3.163:3000/"+command)
+                .build();
+
+        client.newCall(request).enqueue(new com.squareup.okhttp.Callback() {
+            @Override
+            public void onFailure(Request request, IOException e) {
+
+            }
+
+            @Override
+            public void onResponse(com.squareup.okhttp.Response response) throws IOException {
+                if(!response.isSuccessful()) throw new IOException("WUT");
+
+                String responseString = response.body().string();
+                try {
+                    JSONObject responseObject = new JSONObject(responseString);
+                    final String status = responseObject.getString("status");
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(MainActivity.this, status, Toast.LENGTH_SHORT).show();
+                        }
+                    });
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
+
+    public void playNow(String mood) throws Exception {
+        OkHttpClient client = new OkHttpClient();
+
+        Request request = new Request.Builder()
+                .url("http://192.168.3.163:3000/mood/"+mood)
                 .build();
 
         client.newCall(request).enqueue(new com.squareup.okhttp.Callback() {
@@ -247,6 +335,53 @@ public class MainActivity extends AppCompatActivity implements PlayerNotificatio
     @Override
     protected void onDestroy() {
         Spotify.destroyPlayer(this);
+        sharedPreferences.edit().remove("token").apply();
         super.onDestroy();
+    }
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        Sensor sensor = event.sensor;
+        if (sensor.getType() == Sensor.TYPE_LIGHT)
+        {
+            Float lightValue = event.values[0];
+
+            Log.v("light", String.valueOf(lightValue));
+            Log.v("currentValue", String.valueOf(currentLightLevel));
+            if(Math.abs(currentLightLevel - lightValue) < 40){
+                return;
+            }
+
+            if (currentLightLevel <= 66)
+            {
+                mood = "jazz";
+            }
+            else if( currentLightLevel > 66 && currentLightLevel <= 132)
+            {
+                mood = "tbt";
+            }
+            else
+            {
+                mood = "happy";
+            }
+
+            currentLightLevel = lightValue;
+        }
+
+
+        try {
+            playNow(mood);
+            hasPlayed = true;
+            setTheMoodButton.setVisibility(View.GONE);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
     }
 }
