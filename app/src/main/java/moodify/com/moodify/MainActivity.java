@@ -152,6 +152,7 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     protected void onPause() {
         super.onPause();
+        sharedPreferences.edit().remove("token").apply();
     }
 
     @Override
@@ -348,7 +349,7 @@ public class MainActivity extends AppCompatActivity implements
 
             Log.v("light", String.valueOf(lightValue));
             Log.v("currentValue", String.valueOf(currentLightLevel));
-            if(Math.abs(currentLightLevel - lightValue) < 40){
+            if(Math.abs(currentLightLevel - lightValue) < 30){
                 return;
             }
 
